@@ -32,7 +32,6 @@ class CompactionRecoveryTest(RedpandaTest):
               self).__init__(test_context=test_context,
                              extra_rp_conf=extra_rp_conf)
 
-    @ignore  # https://github.com/vectorizedio/redpanda/issues/2455
     @cluster(num_nodes=3)
     def test_index_recovery(self):
         partitions = self.produce_until_segments(3)
