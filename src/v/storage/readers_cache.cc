@@ -297,8 +297,19 @@ void readers_cache::dispose_in_background(entry* e) {
                 delete e; // NOLINT
             });
         });
-    } catch (const ss::gate_closed_exception& e) {
+    } catch (const ss::gate_closed_exception& ex) {
         vlog(stlog.debug, "gate closed while disposing reader");
+        /**
+         * since gate is closed and we failed to call finally on the reader we
+         * add it back to _readers list, it will be gracefully closed in
+         * `readers_cache::close`.
+         * NOTE:
+         * _readers intrusive list is supposed to keep resusable runners but
+         * when gate closed exception is thrwon we are certain that no more
+         * oprations will be executed on the cache so we can reuse the _readers
+         * list to gracefully shutdown readers.
+         */
+        _readers.push_back(*e);
     }
 }
 
