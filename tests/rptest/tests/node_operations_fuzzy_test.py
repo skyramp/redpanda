@@ -111,7 +111,6 @@ class NodeOperationFuzzyTest(EndToEndTest):
     nodes
     """
 
-    @ignore  # https://github.com/vectorizedio/redpanda/issues/2246
     @cluster(num_nodes=7)
     @parametrize(enable_failures=True)
     @parametrize(enable_failures=False)

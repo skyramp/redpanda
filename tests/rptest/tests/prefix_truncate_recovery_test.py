@@ -41,7 +41,6 @@ class PrefixTruncateRecoveryTest(RedpandaTest):
         self.kafka_tools = KafkaCliTools(self.redpanda)
 
     @cluster(num_nodes=3)
-    @ignore  #  https://github.com/vectorizedio/redpanda/issues/2460
     @matrix(acks=[-1, 1])
     def test_prefix_truncate_recovery(self, acks):
         # produce a little data
