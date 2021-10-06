@@ -23,8 +23,16 @@ class CompactionRecoveryTest(RedpandaTest):
     topics = (TopicSpec(cleanup_policy=TopicSpec.CLEANUP_COMPACT), )
 
     def __init__(self, test_context):
+        # we want the compaction interval to be large so that no compactions
+        # start immediately, otherwise `produce_until_segments` will have a hard
+        # time converging: it waits for each partition to be in a "recovered"
+        # state, but compaction messes around with the index files...
+        #
+        # later in the test when the nodes are restarted we select a much
+        # shorter compaction interval and wait for compaction to complete for
+        # the rest of the test.
         extra_rp_conf = dict(
-            log_compaction_interval_ms=2000,
+            log_compaction_interval_ms=200000,
             compacted_log_segment_size=1048576,
         )
 
@@ -42,11 +50,19 @@ class CompactionRecoveryTest(RedpandaTest):
         for p in partitions:
             p.delete_indices(allow_fail=False)
 
+        # now upon restart a short compaction interval is chosen so that
+        # compaction starts to be triggered immediately and then we wait for the
+        # desired state.
+        extra_rp_conf = dict(
+            log_compaction_interval_ms=2000,
+            compacted_log_segment_size=1048576,
+        )
+
         for p in partitions:
-            self.redpanda.start_node(p.node)
+            self.redpanda.start_node(p.node, extra_rp_conf)
 
         wait_until(lambda: all(map(lambda p: p.recovered(), partitions)),
-                   timeout_sec=30,
+                   timeout_sec=60,
                    backoff_sec=2,
                    err_msg="Timeout waiting for partitions to recover.")
 
@@ -63,7 +79,7 @@ class CompactionRecoveryTest(RedpandaTest):
                     partitions))
 
         wait_until(lambda: check_partitions(),
-                   timeout_sec=30,
+                   timeout_sec=60,
                    backoff_sec=2,
                    err_msg="Segments not found")
 
